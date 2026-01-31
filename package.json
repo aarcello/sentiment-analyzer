@@ -1,0 +1,40 @@
+{
+  "name": "sentiment-analyzer",
+  "version": "1.0.0",
+  "description": "Automated sentiment analysis tool for crawling and analyzing product reviews",
+  "main": "dist/index.js",
+  "bin": {
+    "sentiment-analyzer": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/cli.js",
+    "dev": "ts-node src/cli.ts",
+    "crawl": "ts-node src/cli.ts crawl",
+    "analyze": "ts-node src/cli.ts analyze",
+    "report": "ts-node src/cli.ts report",
+    "schedule": "ts-node src/cli.ts schedule"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "cheerio": "^1.0.0-rc.12",
+    "commander": "^11.1.0",
+    "cron": "^3.1.6",
+    "natural": "^6.10.0",
+    "sentiment": "^5.0.2",
+    "chalk": "^4.1.2",
+    "cli-table3": "^0.6.3",
+    "dayjs": "^1.11.10"
+  },
+  "devDependencies": {
+    "@types/cheerio": "^0.22.35",
+    "@types/cron": "^2.4.0",
+    "@types/node": "^20.10.0",
+    "@types/sentiment": "^5.0.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

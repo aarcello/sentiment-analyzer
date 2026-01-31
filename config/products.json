@@ -1,0 +1,47 @@
+{
+  "products": [
+    {
+      "id": "sample-headphones",
+      "name": "Sample Wireless Headphones",
+      "brand": "SampleBrand",
+      "category": "Electronics",
+      "url": "https://www.amazon.com/dp/B09XYZ1234",
+      "platform": "amazon",
+      "enabled": true
+    },
+    {
+      "id": "wireless-headphones-a",
+      "name": "ProSound Wireless Headphones",
+      "brand": "ProSound",
+      "category": "Electronics",
+      "url": "https://example.com/headphones-a",
+      "platform": "generic",
+      "enabled": true
+    },
+    {
+      "id": "wireless-headphones-b",
+      "name": "AudioMax Elite Headphones",
+      "brand": "AudioMax",
+      "category": "Electronics",
+      "url": "https://example.com/headphones-b",
+      "platform": "generic",
+      "enabled": true
+    },
+    {
+      "id": "wireless-headphones-c",
+      "name": "SoundWave Premium Headphones",
+      "brand": "SoundWave",
+      "category": "Electronics",
+      "url": "https://example.com/headphones-c",
+      "platform": "generic",
+      "enabled": true
+    }
+  ],
+  "settings": {
+    "crawlDelay": 2000,
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "maxReviewsPerProduct": 100,
+    "retryAttempts": 3,
+    "dataDir": "./data"
+  }
+}
