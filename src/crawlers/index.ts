@@ -87,3 +87,4 @@ export async function crawlAllProducts(
 }
 
 export { BaseCrawler, AmazonCrawler, GenericCrawler, DemoCrawler };
+export { scrapeCategoryPage, generateDemoProducts, ScrapedProduct, CategoryScrapeResult } from './categoryScraper';

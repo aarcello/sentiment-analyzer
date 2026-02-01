@@ -576,6 +576,131 @@ function getScoreColor(score) {
   return '#f59e0b';
 }
 
+// ==========================================
+// Bulk Import Functions
+// ==========================================
+
+let scrapedProducts = [];
+
+async function scrapeCategoryPage() {
+  const url = document.getElementById('bulk-import-url').value.trim();
+  const category = document.getElementById('bulk-import-category').value.trim();
+
+  if (!url) {
+    showToast('Please enter a category page URL', 'error');
+    return;
+  }
+
+  try {
+    showLoading();
+
+    // Use demo mode for testing (add ?demo=true for demo data)
+    const result = await apiCall('/bulk-import/scrape?demo=true', {
+      method: 'POST',
+      body: JSON.stringify({ url, category }),
+    });
+
+    scrapedProducts = result.products;
+
+    // Show preview
+    displayBulkPreview(result);
+    showToast(`Found ${result.productCount} products!`, 'success');
+
+  } catch (error) {
+    showToast(error.message, 'error');
+  } finally {
+    showLoading(false);
+  }
+}
+
+function displayBulkPreview(result) {
+  const previewDiv = document.getElementById('bulk-import-preview');
+  const countSpan = document.getElementById('bulk-product-count');
+  const listDiv = document.getElementById('bulk-products-list');
+
+  countSpan.textContent = result.productCount;
+
+  const productsHtml = result.products.map((p, index) => `
+    <div class="bulk-product-item selected" data-index="${index}">
+      <label class="product-checkbox">
+        <input type="checkbox" checked data-index="${index}" onchange="toggleProductSelection(${index})">
+        <div class="product-info">
+          <h5>${p.name}</h5>
+          <div class="product-meta">
+            <span class="brand">${p.brand}</span>
+            ${p.price ? `<span class="price">${p.price}</span>` : ''}
+            ${p.rating ? `<span class="rating">★ ${p.rating.toFixed(1)}</span>` : ''}
+            ${p.reviewCount ? `<span class="reviews">(${p.reviewCount} reviews)</span>` : ''}
+          </div>
+          <span class="platform-badge ${result.platform}">${result.platform}</span>
+        </div>
+      </label>
+    </div>
+  `).join('');
+
+  listDiv.innerHTML = productsHtml;
+  previewDiv.style.display = 'block';
+}
+
+function toggleProductSelection(index) {
+  const item = document.querySelector(`.bulk-product-item[data-index="${index}"]`);
+  const checkbox = item.querySelector('input[type="checkbox"]');
+  item.classList.toggle('selected', checkbox.checked);
+}
+
+function toggleSelectAll() {
+  const checkboxes = document.querySelectorAll('#bulk-products-list input[type="checkbox"]');
+  const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+
+  checkboxes.forEach((cb, index) => {
+    cb.checked = !allChecked;
+    toggleProductSelection(index);
+  });
+}
+
+async function importSelectedProducts() {
+  const checkboxes = document.querySelectorAll('#bulk-products-list input[type="checkbox"]:checked');
+  const selectedIndices = Array.from(checkboxes).map(cb => parseInt(cb.dataset.index));
+
+  if (selectedIndices.length === 0) {
+    showToast('Please select at least one product', 'error');
+    return;
+  }
+
+  const selectedProducts = selectedIndices.map(i => ({
+    id: scrapedProducts[i].suggestedId,
+    name: scrapedProducts[i].name,
+    brand: scrapedProducts[i].brand,
+    url: scrapedProducts[i].url,
+    category: document.getElementById('bulk-import-category').value.trim() || 'general',
+  }));
+
+  try {
+    showLoading();
+
+    const result = await apiCall('/bulk-import/add', {
+      method: 'POST',
+      body: JSON.stringify({ products: selectedProducts }),
+    });
+
+    showToast(`Imported ${result.addedCount} products!`, 'success');
+
+    // Reset form
+    document.getElementById('bulk-import-url').value = '';
+    document.getElementById('bulk-import-category').value = '';
+    document.getElementById('bulk-import-preview').style.display = 'none';
+    scrapedProducts = [];
+
+    // Refresh products list
+    loadProducts();
+
+  } catch (error) {
+    showToast(error.message, 'error');
+  } finally {
+    showLoading(false);
+  }
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
   loadDashboard();

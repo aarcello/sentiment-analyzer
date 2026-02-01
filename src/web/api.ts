@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { ConfigManager } from '../config';
-import { crawlProduct, crawlAllProducts } from '../crawlers';
+import { crawlProduct, crawlAllProducts, scrapeCategoryPage, generateDemoProducts } from '../crawlers';
 import { generateProductAnalysis } from '../analyzers';
 import { generateComparisonReport, generateTrendReport } from '../reports';
 import { dataStore } from '../storage/dataStore';
@@ -229,5 +229,119 @@ router.get('/reviews/:id', (req: Request, res: Response) => {
   const reviews = dataStore.getAllReviewsForProduct(getString(req.params.id));
   res.json(reviews);
 });
+
+// Bulk import - scrape category page for products
+router.post('/bulk-import/scrape', async (req: Request, res: Response) => {
+  try {
+    const { url, category } = req.body;
+
+    if (!url) {
+      return res.status(400).json({ error: 'Category URL is required' });
+    }
+
+    // Use demo mode if requested
+    const demoParam = getString(req.query.demo);
+    const useDemo = demoParam === 'true' || demoParam === '1';
+
+    let result;
+    if (useDemo) {
+      result = generateDemoProducts(url, 12);
+    } else {
+      result = await scrapeCategoryPage(url);
+    }
+
+    if (!result.success) {
+      return res.status(400).json({
+        error: result.error || 'Failed to scrape category page',
+        platform: result.platform,
+      });
+    }
+
+    // Enrich products with category if provided
+    const products = result.products.map((p, index) => ({
+      ...p,
+      category: category || 'general',
+      suggestedId: generateProductId(p.name, index),
+    }));
+
+    res.json({
+      success: true,
+      platform: result.platform,
+      productCount: products.length,
+      products,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
+// Bulk import - add multiple products at once
+router.post('/bulk-import/add', async (req: Request, res: Response) => {
+  try {
+    const { products, category } = req.body;
+
+    if (!products || !Array.isArray(products) || products.length === 0) {
+      return res.status(400).json({ error: 'Products array is required' });
+    }
+
+    const added: ProductConfig[] = [];
+    const skipped: string[] = [];
+
+    for (const p of products) {
+      const productId = p.id || generateProductId(p.name, added.length);
+
+      // Skip if product already exists
+      if (configManager.getProduct(productId)) {
+        skipped.push(p.name);
+        continue;
+      }
+
+      const product: ProductConfig = {
+        id: productId,
+        name: p.name,
+        brand: p.brand || 'Unknown',
+        category: p.category || category || 'general',
+        url: p.url,
+        platform: detectPlatformFromUrl(p.url),
+        enabled: true,
+      };
+
+      configManager.addProduct(product);
+      added.push(product);
+    }
+
+    res.json({
+      success: true,
+      addedCount: added.length,
+      skippedCount: skipped.length,
+      added,
+      skipped,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+});
+
+// Helper functions
+function generateProductId(name: string, index: number): string {
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .substring(0, 40);
+  return `${slug}-${index}-${Date.now().toString(36)}`;
+}
+
+function detectPlatformFromUrl(url: string): ProductConfig['platform'] {
+  try {
+    const hostname = new URL(url).hostname.toLowerCase();
+    if (hostname.includes('amazon')) return 'amazon';
+    if (hostname.includes('bestbuy')) return 'bestbuy';
+    if (hostname.includes('walmart')) return 'walmart';
+  } catch {
+    // Invalid URL
+  }
+  return 'generic';
+}
 
 export default router;

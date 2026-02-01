@@ -92,6 +92,44 @@
           <p>Manage products you want to track</p>
         </header>
 
+        <!-- Bulk Import Section -->
+        <div class="card bulk-import-card">
+          <h3>📥 Bulk Import from Category Page</h3>
+          <p class="card-description">Paste a category page URL to automatically discover and import all products.</p>
+
+          <div class="form">
+            <div class="form-row">
+              <div class="form-group" style="flex: 2;">
+                <label for="bulk-import-url">Category Page URL</label>
+                <input type="url" id="bulk-import-url" placeholder="https://www.tesco.com/groceries/en-GB/shop/household/air-fresheners/">
+              </div>
+              <div class="form-group">
+                <label for="bulk-import-category">Category Name</label>
+                <input type="text" id="bulk-import-category" placeholder="Air Fresheners">
+              </div>
+            </div>
+            <div class="action-buttons">
+              <button class="btn btn-primary" onclick="scrapeCategoryPage()">
+                🔍 Scan for Products
+              </button>
+            </div>
+          </div>
+
+          <!-- Scraped Products Preview -->
+          <div id="bulk-import-preview" class="bulk-preview" style="display: none;">
+            <div class="bulk-preview-header">
+              <h4>Found <span id="bulk-product-count">0</span> Products</h4>
+              <div class="bulk-preview-actions">
+                <button class="btn btn-sm btn-outline" onclick="toggleSelectAll()">Select All</button>
+                <button class="btn btn-sm btn-primary" onclick="importSelectedProducts()">
+                  ➕ Import Selected
+                </button>
+              </div>
+            </div>
+            <div id="bulk-products-list" class="bulk-products-grid"></div>
+          </div>
+        </div>
+
         <div class="card">
           <h3>Add New Product</h3>
           <form id="add-product-form" class="form">
