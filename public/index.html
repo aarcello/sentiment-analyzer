@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sentiment Analyzer</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="logo">
+        <span class="logo-icon">📊</span>
+        <h1>Sentiment<br>Analyzer</h1>
+      </div>
+      <nav>
+        <a href="#" class="nav-item active" data-view="dashboard">
+          <span class="nav-icon">🏠</span> Dashboard
+        </a>
+        <a href="#" class="nav-item" data-view="products">
+          <span class="nav-icon">📦</span> Products
+        </a>
+        <a href="#" class="nav-item" data-view="analysis">
+          <span class="nav-icon">🔍</span> Analysis
+        </a>
+        <a href="#" class="nav-item" data-view="compare">
+          <span class="nav-icon">📈</span> Compare
+        </a>
+        <a href="#" class="nav-item" data-view="trends">
+          <span class="nav-icon">📉</span> Trends
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Dashboard View -->
+      <section id="dashboard-view" class="view active">
+        <header class="view-header">
+          <h2>Dashboard</h2>
+          <p>Overview of your product sentiment analysis</p>
+        </header>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="total-products">0</div>
+            <div class="stat-label">Products Tracked</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="total-reviews">0</div>
+            <div class="stat-label">Total Reviews</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="avg-sentiment">--</div>
+            <div class="stat-label">Avg Sentiment</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="top-product">--</div>
+            <div class="stat-label">Top Rated</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Quick Actions</h3>
+          <div class="action-buttons">
+            <button class="btn btn-primary" onclick="crawlAllProducts()">
+              🔄 Crawl All Reviews
+            </button>
+            <button class="btn btn-secondary" onclick="analyzeAllProducts()">
+              🔍 Analyze All
+            </button>
+            <button class="btn btn-outline" onclick="showView('products')">
+              ➕ Add Product
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Recent Analyses</h3>
+          <div id="recent-analyses" class="analyses-list">
+            <p class="empty-state">No analyses yet. Add products and run analysis to get started.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Products View -->
+      <section id="products-view" class="view">
+        <header class="view-header">
+          <h2>Products</h2>
+          <p>Manage products you want to track</p>
+        </header>
+
+        <div class="card">
+          <h3>Add New Product</h3>
+          <form id="add-product-form" class="form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="product-id">Product ID</label>
+                <input type="text" id="product-id" placeholder="unique-product-id" required>
+              </div>
+              <div class="form-group">
+                <label for="product-name">Product Name</label>
+                <input type="text" id="product-name" placeholder="Product Name" required>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="product-brand">Brand</label>
+                <input type="text" id="product-brand" placeholder="Brand Name" required>
+              </div>
+              <div class="form-group">
+                <label for="product-category">Category</label>
+                <input type="text" id="product-category" placeholder="Electronics, Home, etc.">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="product-url">Product URL</label>
+              <input type="url" id="product-url" placeholder="https://amazon.com/dp/..." required>
+            </div>
+            <div class="form-group">
+              <label for="product-platform">Platform</label>
+              <select id="product-platform">
+                <option value="amazon">Amazon</option>
+                <option value="bestbuy">Best Buy</option>
+                <option value="walmart">Walmart</option>
+                <option value="generic">Other / Generic</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Product</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <h3>Your Products</h3>
+          <div id="products-list" class="products-grid">
+            <p class="empty-state">No products added yet. Use the form above to add your first product.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Analysis View -->
+      <section id="analysis-view" class="view">
+        <header class="view-header">
+          <h2>Sentiment Analysis</h2>
+          <p>View detailed analysis for each product</p>
+        </header>
+
+        <div class="card">
+          <h3>Select Product</h3>
+          <div class="form-row">
+            <select id="analysis-product-select" class="form-select">
+              <option value="">-- Select a product --</option>
+            </select>
+            <button class="btn btn-primary" onclick="loadAnalysis()">View Analysis</button>
+          </div>
+        </div>
+
+        <div id="analysis-result" class="analysis-container" style="display: none;">
+          <div class="card">
+            <div class="analysis-header">
+              <h3 id="analysis-product-name">Product Name</h3>
+              <span class="analysis-brand" id="analysis-brand">Brand</span>
+            </div>
+
+            <div class="sentiment-summary">
+              <div class="sentiment-score">
+                <div class="score-circle" id="sentiment-circle">
+                  <span id="sentiment-score-value">0%</span>
+                </div>
+                <span class="score-label">Overall Sentiment</span>
+              </div>
+              <div class="sentiment-breakdown">
+                <div class="breakdown-item positive">
+                  <span class="breakdown-label">Positive</span>
+                  <div class="breakdown-bar">
+                    <div class="breakdown-fill" id="positive-fill"></div>
+                  </div>
+                  <span class="breakdown-value" id="positive-count">0</span>
+                </div>
+                <div class="breakdown-item neutral">
+                  <span class="breakdown-label">Neutral</span>
+                  <div class="breakdown-bar">
+                    <div class="breakdown-fill" id="neutral-fill"></div>
+                  </div>
+                  <span class="breakdown-value" id="neutral-count">0</span>
+                </div>
+                <div class="breakdown-item negative">
+                  <span class="breakdown-label">Negative</span>
+                  <div class="breakdown-bar">
+                    <div class="breakdown-fill" id="negative-fill"></div>
+                  </div>
+                  <span class="breakdown-value" id="negative-count">0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Themes Detected</h3>
+            <div id="themes-list" class="themes-grid"></div>
+          </div>
+
+          <div class="card-row">
+            <div class="card">
+              <h3>Top Positive Keywords</h3>
+              <div id="positive-keywords" class="keywords-list"></div>
+            </div>
+            <div class="card">
+              <h3>Top Negative Keywords</h3>
+              <div id="negative-keywords" class="keywords-list"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Sample Reviews</h3>
+            <div id="sample-reviews" class="reviews-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Compare View -->
+      <section id="compare-view" class="view">
+        <header class="view-header">
+          <h2>Compare Products</h2>
+          <p>Compare sentiment across multiple products</p>
+        </header>
+
+        <div class="card">
+          <button class="btn btn-primary" onclick="loadComparison()">Load Comparison</button>
+        </div>
+
+        <div id="comparison-result" style="display: none;">
+          <div class="card">
+            <h3>Sentiment Ranking</h3>
+            <canvas id="comparison-chart"></canvas>
+          </div>
+
+          <div class="card">
+            <h3>Product Rankings</h3>
+            <div id="rankings-list" class="rankings-grid"></div>
+          </div>
+
+          <div class="card">
+            <h3>Theme Comparison</h3>
+            <canvas id="theme-comparison-chart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Trends View -->
+      <section id="trends-view" class="view">
+        <header class="view-header">
+          <h2>Sentiment Trends</h2>
+          <p>Track sentiment changes over time</p>
+        </header>
+
+        <div class="card">
+          <h3>Select Product</h3>
+          <div class="form-row">
+            <select id="trends-product-select" class="form-select">
+              <option value="">-- Select a product --</option>
+            </select>
+            <select id="trends-days-select" class="form-select">
+              <option value="7">Last 7 days</option>
+              <option value="30" selected>Last 30 days</option>
+              <option value="90">Last 90 days</option>
+            </select>
+            <button class="btn btn-primary" onclick="loadTrends()">View Trends</button>
+          </div>
+        </div>
+
+        <div id="trends-result" style="display: none;">
+          <div class="card">
+            <div class="trend-header">
+              <h3 id="trend-product-name">Product Name</h3>
+              <span class="trend-indicator" id="trend-indicator">Stable</span>
+            </div>
+            <canvas id="trends-chart"></canvas>
+          </div>
+
+          <div class="card">
+            <h3>Historical Data</h3>
+            <table class="data-table" id="trends-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Sentiment</th>
+                  <th>Reviews</th>
+                  <th>Positive %</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast"></div>
+
+  <!-- Loading Overlay -->
+  <div id="loading" class="loading-overlay">
+    <div class="loading-spinner"></div>
+    <p>Processing...</p>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
