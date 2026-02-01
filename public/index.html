@@ -95,11 +95,11 @@
         <!-- Bulk Import Section -->
         <div class="card bulk-import-card">
           <h3>📥 Bulk Import from Category Page</h3>
-          <p class="card-description">Paste a category page URL to automatically discover and import all products.</p>
+          <p class="card-description">Paste a category page URL to automatically discover and import all products. The scraper will follow pagination to find all products.</p>
 
           <div class="form">
             <div class="form-row">
-              <div class="form-group" style="flex: 2;">
+              <div class="form-group" style="flex: 3;">
                 <label for="bulk-import-url">Category Page URL</label>
                 <input type="url" id="bulk-import-url" placeholder="https://www.tesco.com/groceries/en-GB/shop/household/air-fresheners/">
               </div>
@@ -107,11 +107,16 @@
                 <label for="bulk-import-category">Category Name</label>
                 <input type="text" id="bulk-import-category" placeholder="Air Fresheners">
               </div>
+              <div class="form-group" style="flex: 0 0 120px;">
+                <label for="bulk-import-max">Max Products</label>
+                <input type="number" id="bulk-import-max" placeholder="All" min="1" max="5000">
+              </div>
             </div>
             <div class="action-buttons">
               <button class="btn btn-primary" onclick="scrapeCategoryPage()">
-                🔍 Scan for Products
+                🔍 Scan All Pages
               </button>
+              <span class="helper-text">Scrapes all pagination pages to find every product</span>
             </div>
           </div>
 

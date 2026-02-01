@@ -233,7 +233,7 @@ router.get('/reviews/:id', (req: Request, res: Response) => {
 // Bulk import - scrape category page for products
 router.post('/bulk-import/scrape', async (req: Request, res: Response) => {
   try {
-    const { url, category } = req.body;
+    const { url, category, maxProducts } = req.body;
 
     if (!url) {
       return res.status(400).json({ error: 'Category URL is required' });
@@ -243,14 +243,20 @@ router.post('/bulk-import/scrape', async (req: Request, res: Response) => {
     const demoParam = getString(req.query.demo);
     const useDemo = demoParam === 'true' || demoParam === '1';
 
+    // Parse max products (default to all for real scraping, 100 for demo)
+    const maxProductsLimit = maxProducts ? parseInt(maxProducts) : undefined;
+
     let result;
     if (useDemo) {
-      result = generateDemoProducts(url, 12);
+      // Demo mode: generate realistic sample data
+      const demoCount = maxProductsLimit || 100;
+      result = generateDemoProducts(url, demoCount);
     } else {
-      result = await scrapeCategoryPage(url);
+      // Real scraping with pagination
+      result = await scrapeCategoryPage(url, undefined, maxProductsLimit);
     }
 
-    if (!result.success) {
+    if (!result.success && result.products.length === 0) {
       return res.status(400).json({
         error: result.error || 'Failed to scrape category page',
         platform: result.platform,
@@ -268,6 +274,7 @@ router.post('/bulk-import/scrape', async (req: Request, res: Response) => {
       success: true,
       platform: result.platform,
       productCount: products.length,
+      totalPages: result.totalPages,
       products,
     });
   } catch (error) {

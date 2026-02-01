@@ -581,10 +581,13 @@ function getScoreColor(score) {
 // ==========================================
 
 let scrapedProducts = [];
+let bulkImportPlatform = '';
 
 async function scrapeCategoryPage() {
   const url = document.getElementById('bulk-import-url').value.trim();
   const category = document.getElementById('bulk-import-category').value.trim();
+  const maxProductsInput = document.getElementById('bulk-import-max');
+  const maxProducts = maxProductsInput ? maxProductsInput.value : '';
 
   if (!url) {
     showToast('Please enter a category page URL', 'error');
@@ -593,18 +596,22 @@ async function scrapeCategoryPage() {
 
   try {
     showLoading();
+    updateLoadingMessage('Scanning category page for products...');
 
     // Use demo mode for testing (add ?demo=true for demo data)
     const result = await apiCall('/bulk-import/scrape?demo=true', {
       method: 'POST',
-      body: JSON.stringify({ url, category }),
+      body: JSON.stringify({ url, category, maxProducts: maxProducts || undefined }),
     });
 
     scrapedProducts = result.products;
+    bulkImportPlatform = result.platform;
 
     // Show preview
     displayBulkPreview(result);
-    showToast(`Found ${result.productCount} products!`, 'success');
+
+    const pagesInfo = result.totalPages ? ` (${result.totalPages} pages)` : '';
+    showToast(`Found ${result.productCount} products${pagesInfo}!`, 'success');
 
   } catch (error) {
     showToast(error.message, 'error');
@@ -613,22 +620,37 @@ async function scrapeCategoryPage() {
   }
 }
 
+function updateLoadingMessage(message) {
+  const loadingText = document.querySelector('#loading p');
+  if (loadingText) {
+    loadingText.textContent = message;
+  }
+}
+
 function displayBulkPreview(result) {
   const previewDiv = document.getElementById('bulk-import-preview');
   const countSpan = document.getElementById('bulk-product-count');
   const listDiv = document.getElementById('bulk-products-list');
 
-  countSpan.textContent = result.productCount;
+  // Update count with pages info
+  const pagesInfo = result.totalPages ? ` from ${result.totalPages} pages` : '';
+  countSpan.innerHTML = `${result.productCount}<small style="font-weight: normal; color: var(--text-muted);">${pagesInfo}</small>`;
 
-  const productsHtml = result.products.map((p, index) => `
+  // For large lists, use virtualized rendering (show first 100, with load more)
+  const initialDisplay = 100;
+  const hasMore = result.products.length > initialDisplay;
+
+  const productsToShow = result.products.slice(0, initialDisplay);
+
+  let productsHtml = productsToShow.map((p, index) => `
     <div class="bulk-product-item selected" data-index="${index}">
       <label class="product-checkbox">
         <input type="checkbox" checked data-index="${index}" onchange="toggleProductSelection(${index})">
         <div class="product-info">
-          <h5>${p.name}</h5>
+          <h5>${escapeHtml(p.name)}</h5>
           <div class="product-meta">
-            <span class="brand">${p.brand}</span>
-            ${p.price ? `<span class="price">${p.price}</span>` : ''}
+            <span class="brand">${escapeHtml(p.brand)}</span>
+            ${p.price ? `<span class="price">${escapeHtml(p.price)}</span>` : ''}
             ${p.rating ? `<span class="rating">★ ${p.rating.toFixed(1)}</span>` : ''}
             ${p.reviewCount ? `<span class="reviews">(${p.reviewCount} reviews)</span>` : ''}
           </div>
@@ -638,8 +660,76 @@ function displayBulkPreview(result) {
     </div>
   `).join('');
 
+  if (hasMore) {
+    productsHtml += `
+      <div class="load-more-container">
+        <button class="btn btn-outline" onclick="loadMoreProducts()">
+          Load ${Math.min(100, result.products.length - initialDisplay)} more products
+          (${result.products.length - initialDisplay} remaining)
+        </button>
+      </div>
+    `;
+  }
+
   listDiv.innerHTML = productsHtml;
+  listDiv.dataset.displayedCount = initialDisplay;
   previewDiv.style.display = 'block';
+}
+
+function loadMoreProducts() {
+  const listDiv = document.getElementById('bulk-products-list');
+  const currentCount = parseInt(listDiv.dataset.displayedCount) || 0;
+  const nextBatch = 100;
+  const newCount = Math.min(currentCount + nextBatch, scrapedProducts.length);
+
+  // Remove load more button
+  const loadMoreBtn = listDiv.querySelector('.load-more-container');
+  if (loadMoreBtn) loadMoreBtn.remove();
+
+  // Add more products
+  const newProducts = scrapedProducts.slice(currentCount, newCount);
+  const productsHtml = newProducts.map((p, i) => {
+    const index = currentCount + i;
+    return `
+      <div class="bulk-product-item selected" data-index="${index}">
+        <label class="product-checkbox">
+          <input type="checkbox" checked data-index="${index}" onchange="toggleProductSelection(${index})">
+          <div class="product-info">
+            <h5>${escapeHtml(p.name)}</h5>
+            <div class="product-meta">
+              <span class="brand">${escapeHtml(p.brand)}</span>
+              ${p.price ? `<span class="price">${escapeHtml(p.price)}</span>` : ''}
+              ${p.rating ? `<span class="rating">★ ${p.rating.toFixed(1)}</span>` : ''}
+              ${p.reviewCount ? `<span class="reviews">(${p.reviewCount} reviews)</span>` : ''}
+            </div>
+            <span class="platform-badge ${bulkImportPlatform}">${bulkImportPlatform}</span>
+          </div>
+        </label>
+      </div>
+    `;
+  }).join('');
+
+  listDiv.insertAdjacentHTML('beforeend', productsHtml);
+  listDiv.dataset.displayedCount = newCount;
+
+  // Add load more button if there are still more
+  if (newCount < scrapedProducts.length) {
+    const remaining = scrapedProducts.length - newCount;
+    listDiv.insertAdjacentHTML('beforeend', `
+      <div class="load-more-container">
+        <button class="btn btn-outline" onclick="loadMoreProducts()">
+          Load ${Math.min(100, remaining)} more products
+          (${remaining} remaining)
+        </button>
+      </div>
+    `);
+  }
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 function toggleProductSelection(index) {

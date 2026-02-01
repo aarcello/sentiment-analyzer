@@ -887,3 +887,33 @@ input:focus, select:focus {
   font-size: 0.9rem;
   color: var(--text-muted);
 }
+
+/* Helper text */
+.helper-text {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-left: 1rem;
+}
+
+/* Load more button container */
+.load-more-container {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 1rem;
+}
+
+.load-more-container .btn {
+  width: 100%;
+  max-width: 400px;
+}
+
+/* Bulk product count styling */
+#bulk-product-count {
+  font-weight: 700;
+  color: var(--primary);
+}
+
+#bulk-product-count small {
+  font-size: 0.75rem;
+  margin-left: 0.5rem;
+}
